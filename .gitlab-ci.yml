@@ -1,0 +1,38 @@
+variables:
+  DOCKER_IMAGE: ${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}:${CI_COMMIT_TAG}_${CI_COMMIT_SHORT_SHA}
+  DOCKER_CONTAINER: ${CI_PROJECT_NAME}
+stages:
+  - buildandpush
+  - deploy
+
+build:
+  stage: buildandpush
+  variables:
+    GIT_STRATEGY: clone
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - cp "$ENV_PRODUCTION" .env.production
+    - docker build -t $DOCKER_IMAGE .
+    - docker push $DOCKER_IMAGE
+  tags:
+    - ubuntu
+  only:
+    - tags
+
+deploy:
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - docker pull $DOCKER_IMAGE
+    - docker rm -f $DOCKER_CONTAINER || true
+    # - docker run -d --name $DOCKER_CONTAINER -p 3001:3001 $DOCKER_IMAGE
+    - export IMAGE=$DOCKER_IMAGE
+    - docker-compose up -d
+  tags:
+    - ubuntu
+  only:
+    - tags

@@ -1,0 +1,22 @@
+services:
+  app:
+    image: ${IMAGE}
+    container_name: my-dashboard-api
+    ports:
+      - "3001:3001"
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
